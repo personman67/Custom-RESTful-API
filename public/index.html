@@ -175,6 +175,8 @@
                             showError(result.message); // Display error
                         } else {
                             getTasks(); // Retrieve updated task list
+                            document.getElementById("taskNameToUpdate").value = "";
+                            document.getElementById("updatedTaskName").value = "";
                         }
                     })
                     .catch((error) => {
@@ -193,6 +195,7 @@
                     .then((response) => {
                         if (response.status === 204) {
                             getTasks(); // Retrieve updated task list
+                            document.getElementById("taskNameToDelete").value = "";
                         } else {
                             return response.json();
                         }

@@ -1,1 +1,1 @@
-module.exports = {"users":[{"username":"user1","password":"123","tasks":["Brush Teeth", "Walk Dog","Make Dinner"]},{"username":"user2","password":"abc","tasks":["Sweep the floor","Dust the Furniture", "Clean the Bathroom"]}]}
+module.exports = {"users":[{"username":"user1","password":"123","tasks":["Brush Teeth","Walk Dog","Make Dinner"]},{"username":"user2","password":"abc","tasks":["Sweep the floor","Dust the Furniture","Clean the Bathroom"]}]}
