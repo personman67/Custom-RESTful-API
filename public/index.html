@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval';">
+    <title>My To-Do List</title>
+</head>
+
+<body>
+    <div id="login-container">
+        <h1>Login</h1>
+        <form id="loginForm">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <br>
+            <button type="submit">Login</button>
+        </form>
+        <div id="login-error" style="color: red;"></div>
+    </div>
+    <div id="error-container" style="color: red;"></div>
+    <div id="app-container" style="display: none;">
+
+        <!-- Your existing To-Do List content -->
+        <h1>My To-Do List</h1>
+        <ul id="taskList"></ul>
+
+        <!-- Create Task Form -->
+        <h2>Create a Task</h2>
+        <form id="createTaskForm">
+            <input type="text" id="taskName" placeholder="Task name" required>
+            <button type="submit">Create</button>
+        </form>
+
+        <!-- Update Task Form -->
+        <h2>Update a Task</h2>
+        <form id="updateTaskForm">
+            <input type="text" id="taskNameToUpdate" placeholder="Current task name" required>
+            <input type="text" id="updatedTaskName" placeholder="Updated task name" required>
+            <button type="submit">Update</button>
+        </form>
+
+        <!-- Delete Task Form -->
+        <h2>Delete a Task</h2>
+        <form id="deleteTaskForm">
+            <input type="text" id="taskNameToDelete" placeholder="Name of Task to Delete" required>
+            <button type="submit">Delete</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const loginContainer = document.getElementById("login-container");
+            const appContainer = document.getElementById("app-container");
+            appContainer.style.display = 'none';
+            const loginForm = document.getElementById("loginForm");
+            const loginError = document.getElementById("login-error");
+            const updateTaskError = document.getElementById("update-error");
+            const deleteTaskError = document.getElementById("delete-error");
+
+            // Function to handle login
+            function handleLogin() {
+                const username = document.getElementById("username").value;
+                const password = document.getElementById("password").value;
+
+
+                console.log("Username:", username);
+                console.log("Password:", password);
+
+                // Send a POST request to authenticate the user
+                fetch("/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ username, password }),
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.message === "Authentication successful") {
+                            // Hide the login form and show the app content
+                            loginContainer.style.display = "none";
+                            appContainer.style.display = "block";
+                            getTasks();
+                        } else {
+                            loginError.textContent = "Authentication failed. Please try again.";
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error:", error);
+                    });
+            }
+
+
+            function showError(message) {
+                const errorContainer = document.getElementById("error-container");
+                errorContainer.textContent = message;
+            }
+
+            // Add event listener for the login form
+            loginForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+                handleLogin();
+            });
+
+
+            function updateTaskList(tasks) {
+                const taskList = document.getElementById('taskList');
+                taskList.innerHTML = ''; // Clear the existing task list
+
+                tasks.forEach((task) => {
+                    const taskItem = document.createElement('li');
+                    taskItem.textContent = task;
+                    taskList.appendChild(taskItem);
+                });
+            }
+
+            // Function to retrieve tasks
+            function getTasks() {
+                fetch("/tasks", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                })
+                    .then((response) => response.json())
+                    .then((user) => {
+                        updateTaskList(user);
+                    })
+                    .catch((error) => {
+                        console.error("Error retrieving tasks:", error);
+                    });
+            }
+
+            // Add event listener for the "Create Task" form
+            document.getElementById("createTaskForm").addEventListener("submit", function (event) {
+                event.preventDefault();
+                const taskName = document.getElementById("taskName").value;
+                console.log(taskName)
+                fetch("/tasks", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ taskName }),
+                })
+                    .then((response) => response.json())
+                    .then((task) => {
+                        updateTaskList(task);
+                        document.getElementById("taskName").value = ""; // Clear the form input
+                    })
+                    .catch((error) => {
+                        console.error("Error creating task:", error);
+                    });
+            });
+
+            // Add event listener for the "Update Task" form
+            document.getElementById("updateTaskForm").addEventListener("submit", function (event) {
+                event.preventDefault();
+                const taskNameToUpdate = document.getElementById("taskNameToUpdate").value; // Use taskName instead of taskId
+                const updatedTaskName = document.getElementById("updatedTaskName").value;
+
+                fetch(`/tasks/${encodeURIComponent(taskNameToUpdate)}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ taskName: updatedTaskName }),
+                })
+                    .then((response) => response.json())
+                    .then((result) => {
+                        if (result.error) {
+                            showError(result.message); // Display error
+                        } else {
+                            getTasks(); // Retrieve updated task list
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error updating task:", error);
+                    });
+            });
+
+            // Add event listener for the "Delete Task" form
+            document.getElementById("deleteTaskForm").addEventListener("submit", function (event) {
+                event.preventDefault();
+                const taskNameToDelete = document.getElementById("taskNameToDelete").value;
+
+                fetch(`/tasks/${encodeURIComponent(taskNameToDelete)}`, {
+                    method: "DELETE",
+                })
+                    .then((response) => {
+                        if (response.status === 204) {
+                            getTasks(); // Retrieve updated task list
+                        } else {
+                            return response.json();
+                        }
+                    })
+                    .then((result) => {
+                        if (result && result.error) {
+                            showError(result.message); // Display error
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error deleting task:", error);
+                    });
+            });
+        });
+    </script>
+</body>
+
+</html>
